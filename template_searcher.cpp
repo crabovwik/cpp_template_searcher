@@ -5,6 +5,7 @@
 #include <sstream>
 #include <Psapi.h>
 #include <iomanip>
+#include "helper.h"
 
 struct ModuleHandleWrapper {
     HMODULE module_handle = nullptr;
@@ -122,13 +123,26 @@ public:
         }
 
         unsigned long template_length_as_bytes = template_length_as_string / 2;
+        char *template_for_search_in_bytes = new char[template_length_as_bytes];
+        hex2bin(template_for_search, template_for_search_in_bytes);
 
-        system("color 0A"); // Everyone wants some matrix in the life
+        // std::cout << "Template in characters is: " << template_for_search << std::endl;
+        // std::cout << "Template in bytes is: ";
+        // Dat type
+        // for (unsigned long i = 0; i < template_length_as_bytes; i++) std::cout << (int)(unsigned char)template_for_search_in_bytes[i] << ' ';
+        // std::cout << std::endl;
+
         for (unsigned long i = 0; i < this->modules_handles->size; i++) {
             ModuleHandleWrapper *module_handle_wrapper = this->modules_handles->modules_handles_wrappers + i;
 
             CHAR *read_memory_buffer = new CHAR[module_handle_wrapper->size];
             SIZE_T count_of_read_bytes = 0;
+
+            // HACK
+            // unsigned long *hack = (unsigned long *)0x1EC8C0D12B0;
+            // if (!ReadProcessMemory(this->process_handle, hack, read_memory_buffer, 500, &count_of_read_bytes))
+            // HACK
+
             if (!ReadProcessMemory(this->process_handle, module_handle_wrapper->get_start_ptr(), read_memory_buffer,
                                    module_handle_wrapper->size, &count_of_read_bytes)) {
                 std::cout << "Could not read process memory for module #" << (i + 1) << " 0x"
@@ -137,19 +151,66 @@ public:
                 continue;
             }
 
-            // TODO: Search
-            std::cout << "A dump of a memory block of module #" << (i + 1) << " 0x"
-                      << module_handle_wrapper->get_start_ptr() << ":" << std::endl;
-            for (unsigned long j = 0; j < module_handle_wrapper->size; j++) {
-                BYTE current_byte = (BYTE) read_memory_buffer[j];
+            std::cout << "Search for a module #";
+            std::cout << std::setw(5) << std::setfill(' ') << std::left << (i + 1);
+            std::cout << " from 0x" << (void *) module_handle_wrapper->get_start_ptr() << "..." << std::endl;
 
-                std::cout << std::hex << std::setfill('0') << std::setw(2) << (int) current_byte << " ";
-                if ((j + 1) % 32 == 0) {
-                    std::cout << std::endl;
+            // TODO: Search
+            // std::cout << "A dump of a memory block of module #" << (i + 1) << " 0x" << module_handle_wrapper->get_start_ptr() << ":" << std::endl;
+            unsigned long template_byte_pos = 0;
+            for (unsigned long memory_byte_pos = 0; memory_byte_pos < module_handle_wrapper->size; memory_byte_pos++) {
+                // Here is no space inside the module for the pattern.
+                if (template_length_as_bytes > (module_handle_wrapper->size - memory_byte_pos)) {
+                    // std::cout << "No space for template inside the module" << std::endl;
+                    break;
                 }
+
+                int current_memory_byte = (int) (unsigned char) read_memory_buffer[memory_byte_pos];
+                // Mb I should to set types here?...
+                if (current_memory_byte != (int) (unsigned char) template_for_search_in_bytes[template_byte_pos]) {
+                    unsigned long *current_memory_byte_ptr = (unsigned long *) (
+                            (char *) module_handle_wrapper->get_start_ptr() + memory_byte_pos);
+                    // std::cout << "[0x" << (void *) current_memory_byte_ptr << "] Bytes are not equal (" << current_memory_byte << " != " << (int)(unsigned char)template_for_search_in_bytes[template_byte_pos] << ")" << std::endl;
+                    continue;
+                }
+
+                unsigned long *current_memory_byte_ptr = (unsigned long *) (
+                        (char *) module_handle_wrapper->get_start_ptr() + memory_byte_pos);
+                // std::cout << "[0x" << (void *)current_memory_byte_ptr << "] The first bytes are equal (" << current_memory_byte << " == " << (int)(unsigned char)template_for_search_in_bytes[template_byte_pos] << ")" << std::endl;
+
+                // The first byte of the pattern has been found.
+                // Inside of this cycle we are checking other values of the pattern.
+                while (template_byte_pos != template_length_as_bytes) {
+                    template_byte_pos++;
+                    current_memory_byte = (int) (unsigned char) read_memory_buffer[memory_byte_pos + template_byte_pos];
+                    current_memory_byte_ptr = (unsigned long *) ((char *) module_handle_wrapper->get_start_ptr() +
+                                                                 memory_byte_pos + template_byte_pos);
+                    // If bytes are not equal to each other.
+                    if (current_memory_byte != (int) (unsigned char) template_for_search_in_bytes[template_byte_pos]) {
+                        // std::cout << "[0x" << (void *)current_memory_byte_ptr << "] Bytes are not equal (" << current_memory_byte << " != " << (int)(unsigned char)template_for_search_in_bytes[template_byte_pos] << ")" << std::endl;
+                        template_byte_pos = 0;
+                        break;
+                    }
+
+                    // std::cout << "[0x" << (void *)current_memory_byte_ptr << "] Bytes are equal (" << current_memory_byte << " == " << (int)(unsigned char)template_for_search_in_bytes[template_byte_pos] << ")" << std::endl;
+                }
+
+                // The pattern has been found.
+                if (template_byte_pos == template_length_as_bytes) {
+                    std::cout << "The pattern has been found!" << std::endl;
+                    return (void *) ((char *) module_handle_wrapper->get_start_ptr() + memory_byte_pos);
+                }
+
+                // BYTE current_byte = (BYTE) read_memory_buffer[j];
+                //
+                // std::cout << std::hex << std::setfill('0') << std::setw(2) << (int)current_byte << " ";
+                // if ((j + 1) % 32 == 0)
+                // {
+                // 	std::cout << std::endl;
+                // }
             }
 
-            std::cout << std::endl;
+            // std::cout << std::endl;
 
             delete[] read_memory_buffer;
         }
@@ -159,10 +220,12 @@ public:
 };
 
 int main() {
-    char *template_for_search = (char *) "AABBCCDDEEFF";
+    system("color 0A"); // Everyone wants some matrix in the life
+
+    char *template_for_search = (char *) "450067006F0072006900630068002C0020007A0061006500620061006C002C0020006E006100680075007900610020007400690020006D0065006E006900610020006E0061007300680065006C003F00200059006100200074007500740020006F007400640069006800610079007500290029";
     std::cout << "The template for a search: " << template_for_search << std::endl;
 
-    unsigned long process_id = 21900;
+    unsigned long process_id = 6304;
     try {
         TemplateScanner template_scanner = TemplateScanner(process_id);
 
