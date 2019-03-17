@@ -1,4 +1,3 @@
-#include "pch.h"
 #include <iostream>
 #include <Windows.h>
 #include <sstream>
@@ -75,11 +74,11 @@ TemplateSearcher::get_modules_handles(HANDLE process_handle, HMODULE *modules_ha
     return result_modules_handles_ptr;
 }
 
-void *TemplateSearcher::search(char *search_ptr, size_t length) {
+void *TemplateSearcher::search(unsigned char *search_ptr, size_t length) {
     for (size_t i = 0; i < this->modules_handles->size; i++) {
         ModuleHandleWrapper *module_handle_wrapper = this->modules_handles->modules_handles_wrappers + i;
 
-        CHAR *read_memory_buffer = new CHAR[module_handle_wrapper->size];
+        unsigned char *read_memory_buffer = new unsigned char[module_handle_wrapper->size];
         SIZE_T count_of_read_bytes = 0;
 
         if (!ReadProcessMemory(this->process_handle, module_handle_wrapper->get_start_ptr(), read_memory_buffer,
@@ -102,7 +101,7 @@ void *TemplateSearcher::search(char *search_ptr, size_t length) {
                 break;
             }
 
-            char current_memory_byte = read_memory_buffer[memory_byte_pos];
+            unsigned char current_memory_byte = read_memory_buffer[memory_byte_pos];
             if (current_memory_byte != search_ptr[template_byte_pos]) {
                 size_t *current_memory_byte_ptr = (size_t * )(
                         (char *) module_handle_wrapper->get_start_ptr() + memory_byte_pos);

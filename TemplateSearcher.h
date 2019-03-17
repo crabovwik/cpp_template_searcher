@@ -1,6 +1,5 @@
 #pragma once
 
-#include "pch.h"
 #include <iostream>
 #include <Windows.h>
 #include <sstream>
@@ -33,7 +32,7 @@ public:
 
     virtual ~AbstractSearcher() = default;
 
-    virtual void *search(char *search_ptr, size_t length) = 0;
+    virtual void *search(unsigned char *search_ptr, size_t length) = 0;
 };
 
 class TemplateSearcher : public AbstractSearcher {
@@ -62,5 +61,5 @@ public:
     virtual ModulesHandles *
     get_modules_handles(HANDLE process_handle, HMODULE *modules_handles, size_t modules_handles_size);
 
-    virtual void *search(char *search_ptr, size_t length);
+    virtual void *search(unsigned char *search_ptr, size_t length);
 };
