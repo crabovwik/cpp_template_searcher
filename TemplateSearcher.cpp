@@ -14,7 +14,7 @@ void TemplateSearcher::init_modules() {
     if (modules_handles == nullptr) {
         std::ostringstream exception_message;
         exception_message << "Modules have not been found" << std::endl;
-        std::throw_with_nested(std::runtime_error(exception_message.str()));
+        throw std::runtime_error(exception_message.str());
     }
 
     for (size_t i = 0; i < modules_handles->size; i++) {

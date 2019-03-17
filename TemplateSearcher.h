@@ -49,7 +49,7 @@ public:
             std::ostringstream exception_message;
             exception_message << "A process with the specified process_id(" << this->process_id
                               << ") has not been found";
-            std::throw_with_nested(std::runtime_error(exception_message.str()));
+            throw std::runtime_error(exception_message.str());
         }
 
         this->init_modules();

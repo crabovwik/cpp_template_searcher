@@ -24,11 +24,7 @@ int main() {
 
     // TODO: Change a code above
     delete[] template_for_search_as_bytes;
-    template_for_search_as_bytes = new char[4];
-    template_for_search_as_bytes[0] = 0xDE;
-    template_for_search_as_bytes[1] = 0xAD;
-    template_for_search_as_bytes[2] = 0xC0;
-    template_for_search_as_bytes[3] = 0xDE;
+    template_for_search_as_bytes = new char[4]{0xDE, 0xAD, 0xC0, 0xDE};
     template_for_search_as_bytes_length = 4;
 
     size_t process_id = 9180;
