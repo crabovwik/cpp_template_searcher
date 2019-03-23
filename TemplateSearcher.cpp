@@ -18,12 +18,19 @@ void TemplateSearcher::init_modules() {
 
     for (size_t i = 0; i < modules_handles->size; i++) {
         ModuleHandleWrapper *module_handle_wrapper = modules_handles->modules_handles_wrappers + i;
-        std::cout << "Module #" << (i + 1) << ":" << std::endl;
-        std::cout << "Its handle at 0x" << module_handle_wrapper->module_handle << std::endl;
+
+        std::cout << "Module #" << std::dec << (i + 1) << ":" << std::endl;
+
+        if (module_handle_wrapper->module_handle == nullptr) {
+            std::cout << "Something bad with this module" << std::endl << std::endl;
+            continue;
+        }
+
+        std::cout << "Its handle at 0x" << std::hex << module_handle_wrapper->module_handle << std::endl;
         std::wcout << "Name: " << module_handle_wrapper->name << std::endl;
         std::cout << "Start: 0x" << std::hex << module_handle_wrapper->get_start_ptr() << std::endl;
         std::cout << "End pointer: 0x" << std::hex << module_handle_wrapper->get_end_ptr() << std::endl;
-        std::cout << "Size: " << module_handle_wrapper->size << std::endl;
+        std::cout << "Size: " << std::dec << module_handle_wrapper->size << std::endl;
         std::cout << std::endl;
     }
 
@@ -38,8 +45,8 @@ TemplateSearcher::get_modules_handles(HANDLE process_handle, HMODULE *modules_ha
     // HMODULE *modules_handles = new HMODULE[1024];
     // HMODULE *modules_handles = (HMODULE *) calloc(1024, sizeof(HMODULE));
     DWORD count_of_written_modules_handles = 0;
-    if (!EnumProcessModules(this->process_handle, modules_handles, modules_handles_size,
-                            &count_of_written_modules_handles)) {
+    if (!EnumProcessModulesEx(this->process_handle, modules_handles, modules_handles_size,
+                              &count_of_written_modules_handles, LIST_MODULES_ALL)) {
         return result_modules_handles_ptr;
     }
 
