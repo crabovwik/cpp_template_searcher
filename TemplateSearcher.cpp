@@ -103,8 +103,8 @@ void *TemplateSearcher::search(unsigned char *search_ptr, size_t length) {
 
             unsigned char current_memory_byte = read_memory_buffer[memory_byte_pos];
             if (current_memory_byte != search_ptr[template_byte_pos]) {
-                size_t *current_memory_byte_ptr = (size_t * )(
-                        (char *) module_handle_wrapper->get_start_ptr() + memory_byte_pos);
+//                size_t *current_memory_byte_ptr = (size_t * )(
+//                        (char *) module_handle_wrapper->get_start_ptr() + memory_byte_pos);
                 // std::cout << "[0x" << current_memory_byte_ptr << "] Bytes are not equal (" << current_memory_byte << " != " << search_ptr[template_byte_pos] << ")" << std::endl;
                 continue;
             }
@@ -114,8 +114,8 @@ void *TemplateSearcher::search(unsigned char *search_ptr, size_t length) {
 
             // The first byte of the pattern has been found.
             // Inside of this cycle we are checking other values of the pattern.
+            template_byte_pos++;
             while (template_byte_pos != length) {
-                template_byte_pos++;
                 current_memory_byte = read_memory_buffer[memory_byte_pos + template_byte_pos];
                 current_memory_byte_ptr = (size_t * )(
                         (char *) module_handle_wrapper->get_start_ptr() + memory_byte_pos + template_byte_pos);
@@ -124,6 +124,8 @@ void *TemplateSearcher::search(unsigned char *search_ptr, size_t length) {
                     template_byte_pos = 0;
                     break;
                 }
+
+                template_byte_pos++;
             }
 
             // The pattern has been found.
